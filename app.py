@@ -1,4 +1,5 @@
 import re
+import traceback
 from openai import OpenAI
 
 # Initialize Ollama Client
@@ -64,15 +65,50 @@ def evaluate_math_expression(expression: str) -> str:
 # ----------- Tool E: Spell Checker -----------
 
 def spell_check(text: str) -> str:
-    response = client.chat.completions.create(
-        model='tinyllama:latest',
-        messages=[
-            {"role": "system", "content": "You are a spell correction engine. ONLY return the corrected sentence in plain English. Do NOT explain or add extra text."},
-            {"role": "user", "content": f"Correct this sentence:\n\n{text}"}
-        ]
-    )
-    raw_output = response.choices[0].message.content
-    return clean_corrected_output(raw_output)
+    try:
+        response = client.chat.completions.create(
+            model='tinyllama:latest',
+            temperature=0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a strict spell and grammar correction engine.\n"
+                        "Your task is to correct English sentences for spelling and grammar ONLY.\n"
+                        "⚠️ IMPORTANT RULES:\n"
+                        "- DO NOT include any explanation, label, or comment.\n"
+                        "- DO NOT write anything before or after the corrected sentence.\n"
+                        "- DO NOT add quotes or prefixes like 'Corrected sentence:' or similar.\n"
+                        "- DO NOT change meaning or add new words.\n"
+                        "- Only return the corrected sentence. No punctuation if it wasn’t in the original.\n"
+                        "\n"
+                        "Here are some examples to follow:\n"
+                        "\n"
+                        "Input: Whatt is the benfits of soler energee in remote ares?\n"
+                        "Output: What is the benefit of solar energy in remote areas?\n"
+                        "\n"
+                        "Input: Haw dose klimate chang afect agriculturel lands?\n"
+                        "Output: How does climate change affect agricultural lands?\n"
+                        "\n"
+                        "Input: I hav no ideal how to fixx this issue.\n"
+                        "Output: I have no idea how to fix this issue.\n"
+                        "\n"
+                        "Input: This sentense hass too manny errorrs.\n"
+                        "Output: This sentence has too many errors.\n"
+                        "\n"
+                        "Now, correct the next sentence. Follow the same format strictly."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"{text.strip()}"
+                }
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        traceback.print_exc()
+        return text
 
 
 # ----------- Main Orchestrator -----------

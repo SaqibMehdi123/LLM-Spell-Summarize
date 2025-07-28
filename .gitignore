@@ -1,3 +1,5 @@
 .venv
 threading_learn_1.py
 threading_learn_2.py
+.gitignore
+threading_learn_3.py
